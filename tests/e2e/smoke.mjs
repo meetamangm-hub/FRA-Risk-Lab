@@ -18,7 +18,7 @@ await page.evaluate(() => localStorage.clear());
 await page.reload();
 await page.waitForSelector('.hero');
 
-const pages = ['overview', 'builder', 'risk', 'var', 'stress', 'frontier', 'data', 'method', 'viva'];
+const pages = ['overview', 'builder', 'risk', 'var', 'stress', 'frontier', 'data', 'method'];
 for (const p of pages) {
   await page.evaluate((h) => { location.hash = h; }, p);
   await page.waitForTimeout(900);
@@ -26,6 +26,13 @@ for (const p of pages) {
   const txt = await page.innerText('main');
   check(`page "${p}" renders`, txt.length > 200 && !/NaN|undefined|Infinity/.test(txt), /NaN|undefined|Infinity/.test(txt) ? '(contains NaN/undefined)' : '');
 }
+
+// --- Viva removed; old link falls back to the dashboard; group identity shown
+check('no Viva in navigation', !(await page.locator('nav').innerText()).toLowerCase().includes('viva'));
+await page.evaluate(() => { location.hash = 'viva'; });
+await page.waitForTimeout(500);
+check('#viva falls back to the dashboard', (await page.innerText('main')).length > 200 && (await page.locator('.hero').count()) === 1);
+check('group identity in header', (await page.locator('header').innerText()).includes('Group 4'));
 
 // --- reactivity: investment doubles rupee VaR on the dashboard
 const rupeeOf = async (label) => {
@@ -71,7 +78,7 @@ check('changing a weight changes portfolio volatility', vol1 !== vol2, `(${vol1}
 await page.evaluate(() => { location.hash = 'var'; });
 await page.waitForTimeout(700);
 const before = await page.locator('.kpi', { hasText: 'VaR' }).first().locator('.val').innerText();
-await page.getByLabel('Confidence level').fill('99');
+await page.getByLabel('Confidence level', { exact: true }).fill('99');
 await page.waitForTimeout(900);
 const after = await page.locator('.kpi', { hasText: 'VaR' }).first().locator('.val').innerText();
 check('confidence change updates VaR', before !== after, `(${before} → ${after})`);
@@ -80,10 +87,40 @@ check('confidence change updates VaR', before !== after, `(${before} → ${after
 await page.evaluate(() => { location.hash = 'frontier'; });
 await page.waitForTimeout(900);
 await page.getByLabel('Target annual return percent').isDisabled().then((d) => check('target field is disabled while "auto" is on', d));
-await page.getByText("Use today's portfolio return (recommended)").click();
+await page.getByText("Use portfolio's own return").click();
 await page.getByLabel('Target annual return percent').fill('900');
 await page.waitForTimeout(900);
-check('infeasible target is reported, not altered', (await page.locator('main').innerText()).includes('target not feasible'));
+check('infeasible target is reported, not altered', (await page.locator('main').innerText()).includes('Infeasible'));
+
+// --- scenario bar: confidence, method, unit, risk-free all reach the outputs
+await page.evaluate(() => { location.hash = 'overview'; });
+await page.waitForTimeout(600);
+const kv = async () => page.locator('.kpi', { hasText: '1-day ES' }).first().locator('.val').innerText();
+await page.getByLabel('VaR confidence level').selectOption('0.95');
+await page.waitForTimeout(700);
+const k0 = await kv();
+await page.getByLabel('VaR confidence level').selectOption('0.99');
+await page.waitForTimeout(700);
+const k1 = await kv();
+check('scenario bar confidence 95→99 changes ES', k0 !== k1, `(${k0} → ${k1})`);
+await page.getByLabel('VaR method').selectOption('parametric');
+await page.waitForTimeout(700);
+const k2 = await kv();
+check('scenario bar method change updates ES', k1 !== k2, `(${k1} → ${k2})`);
+await page.getByRole('button', { name: '%', exact: true }).click();
+await page.waitForTimeout(500);
+check('₹/% toggle switches the display', (await kv()).includes('%'));
+await page.getByRole('button', { name: '₹', exact: true }).click();
+await page.getByLabel('VaR method').selectOption('historical');
+await page.getByLabel('VaR confidence level').selectOption('0.95');
+
+// --- allocation test: weight limit makes the target impossible, reported per period
+await page.evaluate(() => { location.hash = 'frontier'; });
+await page.waitForTimeout(700);
+await page.getByLabel('Maximum weight percent').fill('5');
+await page.waitForTimeout(900);
+check('impossible weight limit reported as infeasible', (await page.locator('main').innerText()).includes('cannot sum to 100%'));
+await page.getByLabel('Maximum weight percent').fill('100');
 
 // --- reset
 await page.getByRole('button', { name: /Open analysis settings/ }).click();

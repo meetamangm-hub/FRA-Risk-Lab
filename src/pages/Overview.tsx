@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { Plot, COLORS } from '../components/Plot';
 import { Card, Chip, Issues, Kpi, PortTag, Tabs, VerdictChip, Empty } from '../components/ui';
-import { METRICS } from '../engine/classify';
+import { METRICS, tailOf } from '../engine/classify';
 import { stockInfo } from '../engine/model';
 import type { WindowId } from '../engine/types';
 import { fmtDate, fmtInr, fmtLakh, fmtPct } from '../format';
-import { dateAxis, m as getM, turnover, windowLabel, WINDOWS } from '../lib';
+import { dateAxis, m as getM, showLoss, turnover, windowLabel, WINDOWS } from '../lib';
+import { allocationVerdict } from '../engine/frontierCompare';
 import { useStore } from '../state/store';
 
 export function Overview() {
@@ -38,6 +39,26 @@ export function Overview() {
     }));
   }, [A, B]);
 
+  const findings = useMemo(() => {
+    const out: string[] = [];
+    const wl = (id: 'crisis' | 'calm' | 'reference' | 'full') => windowLabel(id).toLowerCase();
+    for (const id of ['full', 'crisis', 'calm'] as const) {
+      const c = an.classification[id];
+      if (c?.primary) out.push(`${windowLabel(id)}: ${c.headline.toLowerCase()}. ${c.detail}`);
+    }
+    const cA = getM(an, 'A', 'crisis'), cB = getM(an, 'B', 'crisis'), kA = getM(an, 'A', 'calm'), kB = getM(an, 'B', 'calm');
+    if (cA && cB && kA && kB) {
+      const mth = config.risk.method;
+      const r = (a: typeof cA, b: typeof cA) => tailOf(a, mth)!.c95.es / tailOf(b, mth)!.c95.es;
+      out.push(`Crisis vs calm: A's 95% ES rose ${(tailOf(cA, mth)!.c95.es / tailOf(kA, mth)!.c95.es).toFixed(1)}× and B's ${(tailOf(cB, mth)!.c95.es / tailOf(kB, mth)!.c95.es).toFixed(1)}×. A÷B ES moved ${r(kA, kB).toFixed(2)}× (calm) → ${r(cA, cB).toFixed(2)}× (${wl('crisis')}).`);
+    }
+    for (const id of ['A', 'B'] as const) {
+      const f = an.frontier[id];
+      if (f) { const v = allocationVerdict(f, config.allocThreshold); out.push(`Portfolio ${id} allocation: ${v.headline}`); }
+    }
+    return out;
+  }, [an, config.risk.method, config.allocThreshold]);
+
   const shift = (id: 'A' | 'B') => {
     const f = an.frontier[id];
     if (!f) return null;
@@ -63,6 +84,15 @@ export function Overview() {
 
       <Issues issues={an.issues} />
 
+      <Card title="Auto-generated findings" aside={<span className="tag calc">calculated</span>}>
+        <div className="stack" style={{ gap: 8 }}>
+          {findings.map((t, i) => <p key={i} className="finding">{t}</p>)}
+        </div>
+        <div className="row" style={{ gap: 6, marginTop: 10 }}>
+          {an.compliance.map((c) => <span key={c.id} className={`chip ${c.ok ? 'good' : 'bad'}`} title={c.detail}>{c.ok ? '✓' : '✗'} {c.label}</span>)}
+        </div>
+      </Card>
+
       <div className="row spread">
         <div className="row">
           <span className="lab">Period shown</span>
@@ -82,8 +112,8 @@ export function Overview() {
               {x ? (
                 <div className="grid g3" style={{ gap: 12 }}>
                   <Kpi label="Annual volatility" value={fmtPct(x.sigmaAnnual, 1)} sub={`mean return ${fmtPct(x.muAnnual, 1)}/yr`} />
-                  <Kpi label={`${conf}% 1-day VaR`} value={fmtInr(x.hist.var * x.investment)} sub={`${fmtPct(x.hist.var)} of value · historical`} />
-                  <Kpi label={`${conf}% 1-day ES`} value={fmtInr(x.hist.es * x.investment)} sub={`${fmtPct(x.hist.es)} of value`} />
+                  <Kpi label={`${conf}% 1-day VaR`} value={showLoss(config.displayUnit, tailOf(x, config.risk.method)?.sel.var, x.investment)} sub={`${config.risk.method} method`} />
+                  <Kpi label={`${conf}% 1-day ES`} value={showLoss(config.displayUnit, tailOf(x, config.risk.method)?.sel.es, x.investment)} sub="avg loss beyond VaR" />
                   <Kpi small label="Max drawdown" value={fmtPct(x.maxDrawdown, 1)} sub={`${fmtDate(x.ddPeakDate)} → ${fmtDate(x.ddTroughDate)}`} />
                   <Kpi small label="Avg. stock correlation" value={x.avgCorr.toFixed(2)} sub="lower = more diversified" />
                   <Kpi small label="Beta" value={x.beta === null ? 'n/a' : x.beta.toFixed(2)} sub={x.beta === null ? 'needs benchmark file' : 'vs benchmark'} />

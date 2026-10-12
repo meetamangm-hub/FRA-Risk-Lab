@@ -30,6 +30,17 @@ export function SettingsDrawer() {
                 {[5000, 10000, 50000, 100000, 250000].map((n) => <option key={n} value={n}>{n.toLocaleString('en-IN')}</option>)}
               </select>
             </Field>
+            <Field label="Monte Carlo shocks" hint="Student-t keeps the same covariance but has fatter tails.">
+              <select className="input" aria-label="Monte Carlo distribution" value={config.mcDist} onChange={(e) => setConfig((c) => ({ ...c, mcDist: e.target.value as 'normal' | 't' }))}>
+                <option value="normal">Normal</option><option value="t">Student-t</option>
+              </select>
+            </Field>
+            {config.mcDist === 't' && (
+              <Field label="t degrees of freedom (3–30)">
+                <NumField label="Student t degrees of freedom" value={config.mcDf} decimals={0} step={1} min={3} max={30} onChange={(v) => setConfig((c) => ({ ...c, mcDf: Math.max(3, Math.min(30, Math.round(v))) }))} />
+              </Field>
+            )}
+            <label className="row small" style={{ gap: 8 }}><input type="checkbox" checked={config.mcZeroMean} onChange={(e) => setConfig((c) => ({ ...c, mcZeroMean: e.target.checked }))} /> Simulate with zero mean return</label>
             <Field label="Random seed" hint="Same seed + same inputs = identical simulation.">
               <NumField label="Random seed" value={config.seed} decimals={0} step={1} onChange={(v) => setConfig((c) => ({ ...c, seed: Math.max(0, Math.round(v)) }))} />
             </Field>

@@ -62,6 +62,32 @@ for pid, names in (('A', A), ('B', B)):
                 if res.success and abs(res.x@mu-target) < 1e-8 and (best is None or res.fun < best.fun): best = res
             rec['variance'] = float(best.fun) if best is not None else None
         out[f'opt/{pid}/{wid}'] = rec
+# capped optimiser (max 25% per stock) and Sharpe at rf = 6.5%
+for pid, names in (('A', A), ('B', B)):
+    w0 = np.full(len(names), 1/len(names))
+    sr, er = W['reference']
+    rr = df.loc[sr:er, names].pct_change().dropna()
+    target = float((rr.values @ w0).mean()*252)
+    for wid in ('reference','calm','crisis'):
+        s_, e_ = W[wid]
+        r = df.loc[s_:e_, names].pct_change().dropna()
+        mu = r.mean().values*252; cov = np.cov(r.values.T, ddof=1)*252
+        cons = ({'type':'eq','fun':lambda x: x.sum()-1},{'type':'eq','fun':lambda x: x@mu-target})
+        best = None
+        for seed in range(8):
+            x0 = np.random.default_rng(seed).dirichlet(np.ones(len(names)))
+            res = minimize(lambda x: x@cov@x, x0, jac=lambda x: 2*cov@x, bounds=[(0,0.25)]*len(names),
+                           constraints=cons, method='SLSQP', options={'ftol':1e-14,'maxiter':1000})
+            if res.success and abs(res.x@mu-target) < 1e-8 and (best is None or res.fun < best.fun): best = res
+        out[f'optcap/{pid}/{wid}'] = {'target': target, 'variance': float(best.fun) if best is not None else None}
+for pid, names in (('A', A), ('B', B)):
+    w = np.full(len(names), 1/len(names))
+    for wid, (s_, e_) in W.items():
+        rp = df.loc[s_:e_, names].pct_change().dropna().values @ w
+        out[f'{pid}/{wid}']['sharpe_6p5'] = float((rp.mean()*252 - 0.065)/(rp.std(ddof=1)*np.sqrt(252)))
+        r = df.loc[s_:e_, names].pct_change().dropna().values
+        cov = np.cov(r.T, ddof=1)
+        out[f'{pid}/{wid}']['risk_contrib'] = [float(x) for x in (w*(cov@w))/(w@cov@w)]
 json.dump(out, open('tests/fixtures/python_reference.json','w'), indent=1)
 print('wrote', len(out), 'records')
 for k in ('A/crisis','B/crisis','opt/A/reference','opt/A/crisis','opt/B/crisis'): print(k, out[k])

@@ -4,9 +4,9 @@ import {
   avgPairwiseCorr, corrFromCov, covMatrix, excessKurtosis, mean, skewness, sortedCopy, stdev,
 } from './stats';
 import { betaOf, diversificationRatio, drawdowns, historicalVaR, parametricVaR, quadForm } from './risk';
-import { mcVaR, simulatePortfolioCached, CovarianceError } from './montecarlo';
+import { mcVaR, simulatePortfolioCached, CovarianceError, DEFAULT_MC, type McOptions } from './montecarlo';
 import type {
-  Benchmark, Dataset, DateWindow, PortfolioMetrics, PortfolioSpec, ValidationIssue,
+  Benchmark, Dataset, DateWindow, PortfolioMetrics, PortfolioSpec, TailSet, ValidationIssue,
 } from './types';
 
 export interface MetricOptions {
@@ -16,6 +16,8 @@ export interface MetricOptions {
   withMonteCarlo: boolean;
   benchmark?: Benchmark | null;
   dataKey?: string; // identifies the dataset in the Monte Carlo cache
+  mc?: McOptions;
+  riskFree?: number; // annual, e.g. 0.065
 }
 
 export const MIN_OBS_WARN = 60;
@@ -78,12 +80,14 @@ export function computeMetrics(ds: Dataset, p: PortfolioSpec, win: DateWindow, o
   const param99 = parametricVaR(m, sd, 0.99);
 
   let mc = null;
+  let mcSet: TailSet | null = null;
   const flags: string[] = [];
   if (opt.withMonteCarlo) {
     try {
       const key = [opt.dataKey ?? 'd', win.start, win.end, tickers.join('|'), weights.map((x) => x.toFixed(10)).join('|'), opt.nSims, opt.seed].join('#');
-      const res = simulatePortfolioCached(key, muD, cov, weights, opt.nSims, opt.seed);
+      const res = simulatePortfolioCached(key, muD, cov, weights, opt.nSims, opt.seed, opt.mc ?? DEFAULT_MC);
       mc = mcVaR(res, opt.confidence);
+      mcSet = { c95: mcVaR(res, 0.95), c99: mcVaR(res, 0.99), sel: mc };
     } catch (e) {
       if (e instanceof CovarianceError) flags.push(e.message);
       else throw e;
@@ -98,6 +102,16 @@ export function computeMetrics(ds: Dataset, p: PortfolioSpec, win: DateWindow, o
     else betaNote = 'Benchmark does not cover every date in this window.';
   } else betaNote = 'No benchmark loaded';
 
+  const rf = opt.riskFree ?? 0;
+  const sigmaAnnual = sd * Math.sqrt(TRADING_DAYS);
+  const sharpe = sigmaAnnual > 0 ? (m * TRADING_DAYS - rf) / sigmaAnnual : null;
+  const pv = quadForm(weights, cov);
+  const riskContrib = weights.map((wi, i) => (pv > 0 ? (wi * cov[i].reduce((s2, c, j) => s2 + c * weights[j], 0)) / pv : 0));
+  const tail = {
+    historical: { c95: hist95, c99: hist99, sel: hist },
+    parametric: { c95: param95, c99: param99, sel: param },
+    montecarlo: mcSet,
+  };
   const cum = dd.wealth[dd.wealth.length - 1] - 1;
   const years = T / TRADING_DAYS;
   const cagr = Math.pow(1 + cum, 1 / years) - 1;
@@ -119,7 +133,7 @@ export function computeMetrics(ds: Dataset, p: PortfolioSpec, win: DateWindow, o
     beta, betaNote,
     assetMu: muD.map((x) => x * TRADING_DAYS),
     assetSigma: cov.map((row, i) => Math.sqrt(row[i]) * Math.sqrt(TRADING_DAYS)),
-    cov, corr, flags,
+    cov, corr, flags, tail, sharpe, riskFree: rf, riskContrib,
   };
 }
 

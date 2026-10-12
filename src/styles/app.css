@@ -160,3 +160,17 @@ table.t tr.total td { font-weight: 700; border-top: 1px solid var(--line); }
 .swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; vertical-align: -2px; }
 .diff-up { color: var(--good); font-weight: 600; } .diff-down { color: var(--bad); font-weight: 600; }
 @media print { .topbar, .drawer, .drawer-back { display: none; } }
+
+/* scenario bar */
+.scenario { background: var(--surface, #fff); border-bottom: 1px solid var(--line, #e3dfd3); position: sticky; top: 52px; z-index: 20; }
+.scenario-in { max-width: 1200px; margin: 0 auto; padding: 8px 16px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; }
+.scenario .sc { display: flex; flex-direction: column; gap: 2px; min-width: 110px; }
+.scenario .sc > span { font-size: .72rem; color: var(--muted, #6b6b6b); text-transform: uppercase; letter-spacing: .04em; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; font-size: .78rem; }
+.tag { padding: 2px 8px; border-radius: 999px; border: 1px solid; font-size: .74rem; }
+.tag.edit { border-color: #1f6fb2; color: #1f6fb2; } .tag.data { border-color: #7b8499; color: #55607a; } .tag.calc { border-color: #1d7a4d; color: #1d7a4d; }
+.finding { padding: 8px 12px; border-left: 4px solid var(--accent, #f2a541); background: #faf7ee; border-radius: 4px; margin: 0; font-size: .92rem; }
+@media (max-width: 700px) { .scenario { position: static; } .scenario .sc { min-width: 46%; flex: 1; } }
+
+.grp { font-weight: 500; opacity: .7; font-size: .72rem; margin-left: 8px; }
+.topbar-in { flex-wrap: wrap; row-gap: 6px; } .nav { flex-wrap: wrap; }

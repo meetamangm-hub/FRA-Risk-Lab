@@ -1,4 +1,6 @@
-import type { PortfolioMetrics } from './types';
+import type { PortfolioMetrics, VarMethod } from './types';
+
+export const tailOf = (m: PortfolioMetrics, method: VarMethod) => m.tail[method] ?? m.tail.historical!;
 
 /** Every metric is oriented so that HIGHER = RISKIER (drawdown and losses are positive magnitudes). */
 export type MetricId = 'vol' | 'var95' | 'var99' | 'es95' | 'es99' | 'mdd' | 'beta';
@@ -9,15 +11,15 @@ export interface MetricDef {
   short: string;
   kind: 'pct' | 'ratio';
   what: string;
-  get: (m: PortfolioMetrics) => number | null;
+  get: (m: PortfolioMetrics, method: VarMethod) => number | null;
 }
 
 export const METRICS: MetricDef[] = [
   { id: 'vol', label: 'Annualised volatility', short: 'Volatility', kind: 'pct', what: 'Total variability of returns (up and down): s·√252.', get: (m) => m.sigmaAnnual },
-  { id: 'var95', label: '95% Historical VaR (1-day)', short: 'VaR 95%', kind: 'pct', what: 'Loss exceeded on only 5% of days.', get: (m) => m.hist95.var },
-  { id: 'var99', label: '99% Historical VaR (1-day)', short: 'VaR 99%', kind: 'pct', what: 'Loss exceeded on only 1% of days.', get: (m) => m.hist99.var },
-  { id: 'es95', label: '95% Expected Shortfall (1-day)', short: 'ES 95%', kind: 'pct', what: 'Average loss on the worst 5% of days.', get: (m) => m.hist95.es },
-  { id: 'es99', label: '99% Expected Shortfall (1-day)', short: 'ES 99%', kind: 'pct', what: 'Average loss on the worst 1% of days.', get: (m) => m.hist99.es },
+  { id: 'var95', label: '95% VaR (1-day)', short: 'VaR 95%', kind: 'pct', what: 'Loss exceeded on only 5% of days.', get: (m, k) => tailOf(m, k).c95.var },
+  { id: 'var99', label: '99% VaR (1-day)', short: 'VaR 99%', kind: 'pct', what: 'Loss exceeded on only 1% of days.', get: (m, k) => tailOf(m, k).c99.var },
+  { id: 'es95', label: '95% Expected Shortfall (1-day)', short: 'ES 95%', kind: 'pct', what: 'Average loss on the worst 5% of days.', get: (m, k) => tailOf(m, k).c95.es },
+  { id: 'es99', label: '99% Expected Shortfall (1-day)', short: 'ES 99%', kind: 'pct', what: 'Average loss on the worst 1% of days.', get: (m, k) => tailOf(m, k).c99.es },
   { id: 'mdd', label: 'Maximum drawdown', short: 'Max drawdown', kind: 'pct', what: 'Deepest fall from a previous peak.', get: (m) => m.maxDrawdown },
   { id: 'beta', label: 'Beta vs benchmark', short: 'Beta', kind: 'ratio', what: 'Sensitivity to the market benchmark.', get: (m) => m.beta },
 ];
@@ -26,6 +28,8 @@ export type PrimaryId = MetricId | 'composite';
 
 export interface RiskSettings {
   primary: PrimaryId;
+  /** which VaR/ES estimator feeds the VaR and ES measures */
+  method: VarMethod;
   supporting: MetricId[];
   /** A is "materially" riskier when ratio ≥ threshold (and B when ratio ≤ 1/threshold). */
   threshold: number;
@@ -34,6 +38,7 @@ export interface RiskSettings {
 
 export const DEFAULT_RISK: RiskSettings = {
   primary: 'vol',
+  method: 'historical',
   supporting: ['es95', 'es99', 'var95', 'mdd'],
   threshold: 1.1,
   compositeWeights: { vol: 3, var95: 1, var99: 1, es95: 2, es99: 2, mdd: 2, beta: 0 },
@@ -77,12 +82,12 @@ export function directionOf(ratio: number | null, threshold: number): Direction 
  * 0.5 means equal. Score_A = Σ w_k s_k,A / Σ w_k  and Score_B = 1 − Score_A. Ratio = Score_A / Score_B.
  * Weights are user choices, not a financial standard.
  */
-export function compositeScore(a: PortfolioMetrics, b: PortfolioMetrics, weights: Record<MetricId, number>) {
+export function compositeScore(a: PortfolioMetrics, b: PortfolioMetrics, weights: Record<MetricId, number>, method: VarMethod = 'historical') {
   let num = 0, den = 0;
   for (const def of METRICS) {
     const w = weights[def.id] ?? 0;
     if (w <= 0) continue;
-    const va = def.get(a), vb = def.get(b);
+    const va = def.get(a, method), vb = def.get(b, method);
     if (va === null || vb === null) continue;
     const sa = Math.max(va, 0), sb = Math.max(vb, 0);
     if (sa + sb <= 0) continue;
@@ -96,11 +101,11 @@ export function compositeScore(a: PortfolioMetrics, b: PortfolioMetrics, weights
 
 export function classify(a: PortfolioMetrics, b: PortfolioMetrics, s: RiskSettings): Classification {
   const rows: ClassRow[] = METRICS.map((d) => {
-    const va = d.get(a), vb = d.get(b);
+    const va = d.get(a, s.method ?? 'historical'), vb = d.get(b, s.method ?? 'historical');
     const ratio = va !== null && vb !== null && vb > 0 ? va / vb : null;
     return { id: d.id, label: d.label, kind: d.kind, a: va, b: vb, ratio, direction: directionOf(ratio, s.threshold) };
   });
-  const comp = compositeScore(a, b, s.compositeWeights);
+  const comp = compositeScore(a, b, s.compositeWeights, s.method ?? 'historical');
   const compRow: ClassRow | null = comp
     ? { id: 'composite', label: 'Optional composite score', kind: 'score', a: comp.a, b: comp.b, ratio: comp.ratio, direction: directionOf(comp.ratio, s.threshold) }
     : null;

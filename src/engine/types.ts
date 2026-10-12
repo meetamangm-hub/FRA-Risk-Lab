@@ -55,6 +55,15 @@ export type MethodResult = {
   q: number;
 };
 
+export type VarMethod = 'historical' | 'parametric' | 'montecarlo';
+
+export interface TailSet {
+  c95: MethodResult;
+  c99: MethodResult;
+  /** at the user-selected confidence level */
+  sel: MethodResult;
+}
+
 export interface PortfolioMetrics {
   portfolio: PortfolioId;
   window: DateWindow;
@@ -82,6 +91,11 @@ export interface PortfolioMetrics {
   hist99: MethodResult;
   param95: MethodResult;
   param99: MethodResult;
+  // method-aware tail risk (montecarlo falls back to null when the covariance is not positive definite)
+  tail: Record<VarMethod, TailSet | null>;
+  sharpe: number | null; // (annual arithmetic return − risk-free) / annual volatility
+  riskFree: number;
+  riskContrib: number[]; // each stock's share of portfolio variance (sums to 1)
   // drawdown
   maxDrawdown: number; // positive fraction
   ddPeakDate: string;

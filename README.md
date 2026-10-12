@@ -37,7 +37,7 @@ npm run build        # type-check + production build into dist/
 ## Project layout
 ```
 src/engine/    stats · returns · risk (VaR/ES/MDD/beta) · montecarlo · optimizer · classify · frontierCompare · model (config → all results)
-src/pages/     Dashboard, Builder, Risk Definition, VaR Lab, Crisis vs Calm, Frontier, Data, Methodology, Viva
+src/pages/     Dashboard, Builder, Risk Definition, VaR Lab, Crisis vs Calm, Frontier, Data, Methodology
 src/state/     reactive store (config → deferred → analyse())
 tests/         unit tests, Python cross-check, e2e/smoke.mjs (real browser)
 scripts/       crosscheck.py (independent NumPy/SciPy implementation), audit-data.py

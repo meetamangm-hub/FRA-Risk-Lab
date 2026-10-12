@@ -1,71 +1,17 @@
 
  RUN  v2.1.4 /home/claude/fra-risk-lab
 
- ✓ tests/model.test.ts > real workbook data > has the audited shape
- ✓ tests/model.test.ts > real workbook data > default configuration matches the brief: 10+10 distinct stocks, ₹15 lakh each, equal weights
- ✓ tests/model.test.ts > real workbook data > full pipeline runs on real data for all windows and both portfolios 432ms
- ✓ tests/model.test.ts > real workbook data > crisis window selects exactly the expected return observations
- ✓ tests/model.test.ts > automatic recalculation > doubling the investment doubles rupee VaR/ES and leaves percentages unchanged
- ✓ tests/model.test.ts > automatic recalculation > changing a weight recalculates returns, volatility, VaR, ES, drawdown and the verdict inputs
- ✓ tests/model.test.ts > automatic recalculation > changing the date range changes the observation count and the statistics
- ✓ tests/model.test.ts > automatic recalculation > changing the confidence level changes VaR/ES, and 99% VaR ≥ 95% VaR
- ✓ tests/model.test.ts > automatic recalculation > changing the target return changes the optimisation; changing the window changes weights
- ✓ tests/model.test.ts > automatic recalculation > the same target return is used in every period
- ✓ tests/model.test.ts > automatic recalculation > invalid weights produce an explicit error and block calculation (no silent repair)
- ✓ tests/model.test.ts > automatic recalculation > negative weights, duplicate stocks across portfolios and short windows are flagged
- ✓ tests/model.test.ts > data validation > rejects malformed uploads with a clear reason
- ✓ tests/model.test.ts > data validation > MnM header is normalised to M&M
- ✓ tests/model.test.ts > data validation > missing prices are never filled with zero returns: the date is dropped for all stocks
- ✓ tests/model.test.ts > data validation > benchmark parser accepts Date,Close and rejects junk
- ✓ tests/model.test.ts > beta with a benchmark > equals 1 when the benchmark is the portfolio, and 2 when the portfolio moves twice as much
- ✓ tests/model.test.ts > risk classification > derives the verdict from the data and flips when the portfolios are swapped
- ✓ tests/model.test.ts > risk classification > threshold bands
- ✓ tests/model.test.ts > risk classification > same portfolio on both sides is "similar" and not supported
- ✓ tests/optimizer.test.ts > Markowitz optimiser > two uncorrelated assets: GMV weight is σ₂²/(σ₁²+σ₂²)
- ✓ tests/optimizer.test.ts > Markowitz optimiser > satisfies the budget, long-only, and target-return constraints and reports its own variance
- ✓ tests/optimizer.test.ts > Markowitz optimiser > beats a brute-force search over every feasible 3-asset portfolio
- ✓ tests/optimizer.test.ts > Markowitz optimiser > handles a binding long-only constraint (an asset forced to zero)
- ✓ tests/optimizer.test.ts > Markowitz optimiser > reports infeasible targets instead of changing them
- ✓ tests/optimizer.test.ts > Markowitz optimiser > a target equal to the best asset return gives 100% in that asset
- ✓ tests/optimizer.test.ts > Markowitz optimiser > unconstrained mode may short, and then any target is feasible
- ✓ tests/optimizer.test.ts > Markowitz optimiser > frontier is convex-increasing in volatility with return
- ✓ tests/optimizer.test.ts > Markowitz optimiser > 10-asset problem: optimum satisfies KKT-style sanity (no random feasible portfolio is better)
- ✓ tests/risk.test.ts > VaR and Expected Shortfall > historical VaR95 / ES95 on a known grid
- ✓ tests/risk.test.ts > VaR and Expected Shortfall > ES is never smaller than VaR and 99% ≥ 95%
- ✓ tests/risk.test.ts > VaR and Expected Shortfall > VaR is floored at zero when the quantile is a gain
- ✓ tests/risk.test.ts > VaR and Expected Shortfall > parametric VaR / ES match hand calculation
- ✓ tests/risk.test.ts > VaR and Expected Shortfall > rupee VaR scales linearly with investment
- ✓ tests/risk.test.ts > drawdown > maximum drawdown on a hand-built path
- ✓ tests/risk.test.ts > drawdown > a monotonically rising path has zero drawdown
- ✓ tests/risk.test.ts > portfolio identities > portfolio return is the weighted sum and variance equals wᵀΣw
- ✓ tests/risk.test.ts > portfolio identities > beta of a series against 2× itself is 0.5; against itself is 1
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > A/full: moments, VaR, ES, drawdown, correlation
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > A/reference: moments, VaR, ES, drawdown, correlation
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > A/crisis: moments, VaR, ES, drawdown, correlation
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > A/calm: moments, VaR, ES, drawdown, correlation
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > B/full: moments, VaR, ES, drawdown, correlation
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > B/reference: moments, VaR, ES, drawdown, correlation
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > B/crisis: moments, VaR, ES, drawdown, correlation
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > B/calm: moments, VaR, ES, drawdown, correlation
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > optimiser A/reference: feasibility and minimum variance match SciPy SLSQP
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > optimiser A/crisis: feasibility and minimum variance match SciPy SLSQP
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > optimiser A/calm: feasibility and minimum variance match SciPy SLSQP
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > optimiser B/reference: feasibility and minimum variance match SciPy SLSQP
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > optimiser B/crisis: feasibility and minimum variance match SciPy SLSQP
- ✓ tests/crosscheck.test.ts > TypeScript engine vs independent Python implementation (real data) > optimiser B/calm: feasibility and minimum variance match SciPy SLSQP
- ✓ tests/montecarlo.test.ts > Monte Carlo VaR > Cholesky reproduces Σ
- ✓ tests/montecarlo.test.ts > Monte Carlo VaR > same seed ⇒ identical result; different seed ⇒ different result
- ✓ tests/montecarlo.test.ts > Monte Carlo VaR > preserves the dependence structure (simulated covariance ≈ Σ, correlations kept)
- ✓ tests/montecarlo.test.ts > Monte Carlo VaR > converges to parametric VaR for a Gaussian model
- ✓ tests/montecarlo.test.ts > Monte Carlo VaR > rejects a non-positive-definite covariance with a clear message
- ✓ tests/stats.test.ts > basic statistics > sample mean / variance / sd use the (T-1) denominator
- ✓ tests/stats.test.ts > basic statistics > covariance of known series
- ✓ tests/stats.test.ts > basic statistics > covariance matrix is symmetric with variances on the diagonal
- ✓ tests/stats.test.ts > basic statistics > normal quantiles match published values
- ✓ tests/stats.test.ts > basic statistics > quantile type 7 interpolates between order statistics
+ ✓ tests/upgrades.test.ts  (34 tests) 727ms
+ ✓ tests/model.test.ts  (20 tests) 767ms
+   ✓ real workbook data > full pipeline runs on real data for all windows and both portfolios 527ms
+ ✓ tests/optimizer.test.ts  (9 tests) 97ms
+ ✓ tests/risk.test.ts  (9 tests) 7ms
+ ✓ tests/crosscheck.test.ts  (14 tests) 13ms
+ ✓ tests/montecarlo.test.ts  (5 tests) 240ms
+ ✓ tests/stats.test.ts  (5 tests) 5ms
 
- Test Files  6 passed (6)
-      Tests  62 passed (62)
-   Start at  12:10:40
-   Duration  3.31s (transform 320ms, setup 0ms, collect 720ms, tests 944ms, environment 1ms, prepare 426ms)
+ Test Files  7 passed (7)
+      Tests  96 passed (96)
+   Start at  13:32:20
+   Duration  20.85s (transform 441ms, setup 0ms, collect 17.09s, tests 1.86s, environment 1ms, prepare 479ms)
 

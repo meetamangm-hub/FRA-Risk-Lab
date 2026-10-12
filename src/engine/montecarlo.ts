@@ -31,19 +31,38 @@ export function cholesky(sigma: number[][]): number[][] {
  * Simulate joint daily stock returns r = μ + L z, z ~ N(0, I). Returns asset-major matrix sims[j][s].
  * Cross-stock dependence is preserved because every simulated vector shares the same L.
  */
-export function simulateAssetReturns(mu: number[], sigma: number[][], nSims: number, seed: number): Float64Array[] {
+export interface McOptions {
+  /** shock distribution: multivariate normal, or multivariate Student-t (fat tails) rescaled to the same covariance */
+  dist: 'normal' | 't';
+  /** integer degrees of freedom for the t distribution (3–30) */
+  df: number;
+  /** if true, simulate with zero mean instead of the sample mean */
+  zeroMean: boolean;
+}
+export const DEFAULT_MC: McOptions = { dist: 'normal', df: 5, zeroMean: false };
+
+export function simulateAssetReturns(mu0: number[], sigma: number[][], nSims: number, seed: number, opt: McOptions = DEFAULT_MC): Float64Array[] {
+  const mu = opt.zeroMean ? mu0.map(() => 0) : mu0;
   const n = mu.length;
+  const df = Math.max(3, Math.min(30, Math.round(opt.df)));
   const L = cholesky(sigma);
   const gauss = makeNormalGenerator(seed);
   const out = Array.from({ length: n }, () => new Float64Array(nSims));
   const z = new Float64Array(n);
   for (let s = 0; s < nSims; s++) {
     for (let k = 0; k < n; k++) z[k] = gauss();
+    let scale = 1;
+    if (opt.dist === 't') {
+      // t = z·sqrt(df/χ²_df); dividing by sd sqrt(df/(df−2)) keeps Cov = Σ exactly
+      let chi = 0;
+      for (let k = 0; k < df; k++) { const g = gauss(); chi += g * g; }
+      scale = Math.sqrt((df - 2) / chi);
+    }
     for (let i = 0; i < n; i++) {
-      let v = mu[i];
+      let v = 0;
       const Li = L[i];
       for (let k = 0; k <= i; k++) v += Li[k] * z[k];
-      out[i][s] = v;
+      out[i][s] = mu[i] + scale * v;
     }
   }
   return out;
@@ -55,8 +74,8 @@ export interface McResult {
 }
 
 /** Simulate portfolio returns r_p = wᵀ r and return them sorted (so VaR at any confidence is a lookup). */
-export function simulatePortfolio(mu: number[], sigma: number[][], w: number[], nSims: number, seed: number): McResult {
-  const sims = simulateAssetReturns(mu, sigma, nSims, seed);
+export function simulatePortfolio(mu: number[], sigma: number[][], w: number[], nSims: number, seed: number, opt: McOptions = DEFAULT_MC): McResult {
+  const sims = simulateAssetReturns(mu, sigma, nSims, seed, opt);
   const rp = new Float64Array(nSims);
   for (let j = 0; j < w.length; j++) {
     const c = sims[j];
@@ -72,11 +91,12 @@ export function mcVaR(res: McResult, confidence: number): MethodResult {
 
 // Small cache keyed by inputs so confidence/investment edits don't re-simulate.
 const cache = new Map<string, McResult>();
-export function simulatePortfolioCached(key: string, mu: number[], sigma: number[][], w: number[], nSims: number, seed: number): McResult {
-  const hit = cache.get(key);
+export function simulatePortfolioCached(key: string, mu: number[], sigma: number[][], w: number[], nSims: number, seed: number, opt: McOptions = DEFAULT_MC): McResult {
+  const full = `${key}#${opt.dist}${opt.df}${opt.zeroMean ? 'z' : 'm'}`;
+  const hit = cache.get(full);
   if (hit) return hit;
-  const res = simulatePortfolio(mu, sigma, w, nSims, seed);
-  cache.set(key, res);
+  const res = simulatePortfolio(mu, sigma, w, nSims, seed, opt);
+  cache.set(full, res);
   if (cache.size > 24) cache.delete(cache.keys().next().value as string);
   return res;
 }

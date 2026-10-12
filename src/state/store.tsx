@@ -5,7 +5,8 @@ import { analyse, defaultConfig, type Analysis, type Config } from '../engine/mo
 import type { Benchmark, Dataset } from '../engine/types';
 
 const KEY = 'fra-risk-lab:config:v1';
-export type Page = 'overview' | 'builder' | 'risk' | 'var' | 'stress' | 'frontier' | 'data' | 'method' | 'viva';
+import { toPage, type Page } from './pages';
+export type { Page };
 
 const bundled: Dataset = parsePricesCsv(pricesCsv, 'Project workbook (02_Historical_Data)');
 
@@ -60,13 +61,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [config, setCfg] = useState<Config>(readStored);
   const [custom, setCustom] = useState<Dataset | null>(null);
   const [benchmark, setBenchmark] = useState<Benchmark | null>(null);
-  const [page, setPage] = useState<Page>(() => (location.hash.slice(1) as Page) || 'overview');
+  const [page, setPage] = useState<Page>(() => toPage(location.hash.slice(1)));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const dataset = custom ?? bundled;
 
   useEffect(() => { location.hash = page; }, [page]);
   useEffect(() => {
-    const h = () => { const p = location.hash.slice(1) as Page; if (p) setPage(p); };
+    const h = () => setPage(toPage(location.hash.slice(1)));
     window.addEventListener('hashchange', h);
     return () => window.removeEventListener('hashchange', h);
   }, []);

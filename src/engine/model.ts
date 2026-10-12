@@ -6,13 +6,15 @@ import stocksJson from '../data/stocks.json';
 import { classify, DEFAULT_RISK, type Classification, type RiskSettings } from './classify';
 import { computeMetrics, MIN_OBS_HARD, validatePortfolio, validateWindow } from './analysis';
 import { compareFrontiers, type FrontierComparison } from './frontierCompare';
+import { DEFAULT_MC, type McOptions } from './montecarlo';
+import { LONG_ONLY, SHORTING, type OptOptions } from './optimizer';
 import { returnPanel } from './returns';
 import { drawdowns } from './risk';
 import { portfolioReturns } from './returns';
 import { stdev } from './stats';
 import { TRADING_DAYS } from './data';
 import type {
-  Benchmark, Dataset, DateWindow, Holding, PortfolioId, PortfolioMetrics, PortfolioSpec, ValidationIssue, WindowId,
+  Benchmark, Dataset, DateWindow, Holding, PortfolioId, PortfolioMetrics, PortfolioSpec, ValidationIssue, VarMethod, WindowId,
 } from './types';
 
 export interface StockInfo {
@@ -38,6 +40,21 @@ export interface Config {
   /** annual target return as a fraction; null = use the portfolio's own reference-window return */
   targetReturn: number | null;
   longOnly: boolean;
+  /** per-stock weight limits for the optimiser (fractions); applied only when long-only */
+  minWeight: number;
+  maxWeight: number;
+  /** annual risk-free rate (an assumption, not data), used for Sharpe ratios and the max-Sharpe portfolio */
+  riskFree: number;
+  /** VaR/ES estimator used for headline numbers and the classification */
+  varMethod: VarMethod;
+  /** Monte Carlo assumptions */
+  mcDist: 'normal' | 't';
+  mcDf: number;
+  mcZeroMean: boolean;
+  /** show risk as % of portfolio or as ₹ amounts */
+  displayUnit: 'pct' | 'inr';
+  /** "materially different" allocation threshold (turnover) */
+  allocThreshold: number;
   risk: RiskSettings;
   /** window for the Dashboard / VaR Lab */
   focusWindow: WindowId;
@@ -65,6 +82,15 @@ export function defaultConfig(): Config {
     seed: 42,
     targetReturn: null,
     longOnly: true,
+    minWeight: 0,
+    maxWeight: 1,
+    riskFree: 0.065,
+    varMethod: 'historical',
+    mcDist: 'normal',
+    mcDf: 5,
+    mcZeroMean: false,
+    displayUnit: 'inr',
+    allocThreshold: 0.1,
     risk: JSON.parse(JSON.stringify(DEFAULT_RISK)),
     focusWindow: 'full',
     focusPortfolio: 'A',
@@ -79,6 +105,9 @@ export const WINDOW_PRESETS: { id: string; label: string; target: WindowId; wind
   { id: 'ref5', label: 'Last 5 years', target: 'reference', window: { start: '2021-03-30', end: '2026-03-30' }, note: 'Matches the "last 5 years" note in the workbook.' },
   { id: 'ref3', label: 'Last 3 years', target: 'reference', window: { start: '2023-03-30', end: '2026-03-30' }, note: 'More recent, noisier.' },
 ];
+
+export const mcOptionsOf = (c: Config): McOptions => ({ dist: c.mcDist, df: c.mcDf, zeroMean: c.mcZeroMean });
+export const optOptionsOf = (c: Config): OptOptions => (c.longOnly ? { lo: Math.max(0, c.minWeight), hi: Math.min(1, c.maxWeight) } : SHORTING);
 
 export interface WindowResult {
   metrics: PortfolioMetrics | null;
@@ -101,6 +130,7 @@ export interface Analysis {
   frontier: Record<PortfolioId, FrontierComparison | null>;
   frontierError: Record<PortfolioId, string | null>;
   overlap: string[];
+  compliance: { id: string; label: string; ok: boolean; detail: string }[];
 }
 
 const WINDOW_IDS: WindowId[] = ['full', 'reference', 'crisis', 'calm'];
@@ -119,6 +149,12 @@ export function analyse(cfg: Config, ds: Dataset, benchmark: Benchmark | null, d
   if (overlap.length) issues.push({ level: 'error', message: `Stock(s) in both portfolios: ${overlap.join(', ')}. The brief forbids repeats.` });
 
   const blocking: Record<PortfolioId, boolean> = { A: false, B: false };
+  if (cfg.longOnly) {
+    for (const id of ['A', 'B'] as PortfolioId[]) {
+      const out = cfg.holdings[id].filter((h) => h.weight < cfg.minWeight - 1e-9 || h.weight > cfg.maxWeight + 1e-9).map((h) => h.ticker);
+      if (out.length) issues.push({ level: 'warning', message: `Portfolio ${id}: ${out.join(', ')} outside the ${(cfg.minWeight * 100).toFixed(0)}–${(cfg.maxWeight * 100).toFixed(0)}% per-stock limit (limits bind the optimiser; your manual weights are used as typed).` });
+    }
+  }
   for (const id of ['A', 'B'] as PortfolioId[]) {
     const v = validatePortfolio(specs[id], ds);
     issues.push(...v);
@@ -141,6 +177,7 @@ export function analyse(cfg: Config, ds: Dataset, benchmark: Benchmark | null, d
         metrics[id][w] = {
           metrics: computeMetrics(ds, specs[id], cfg.windows[w], {
             confidence: cfg.confidence, nSims: cfg.nSims, seed: cfg.seed, withMonteCarlo: true, benchmark, dataKey,
+            mc: mcOptionsOf(cfg), riskFree: cfg.riskFree,
           }),
           error: null,
         };
@@ -181,10 +218,17 @@ export function analyse(cfg: Config, ds: Dataset, benchmark: Benchmark | null, d
           { id: 'crisis', label: 'Crisis', window: cfg.windows.crisis },
           { id: 'calm', label: 'Calm', window: cfg.windows.calm },
         ],
-        cfg.windows.reference, cfg.targetReturn, cfg.longOnly,
+        cfg.windows.reference, cfg.targetReturn, optOptionsOf(cfg), cfg.riskFree,
       );
     } catch (e) { frontierError[id] = (e as Error).message; }
   }
 
-  return { specs, issues, blocking, metrics, classification, proxy, frontier, frontierError, overlap };
+  const wsum = (id: PortfolioId) => cfg.holdings[id].reduce((x, h) => x + h.weight, 0);
+  const compliance = [
+    { id: 'nA', label: 'Portfolio A has ≥ 10 stocks', ok: cfg.holdings.A.length >= 10, detail: `${cfg.holdings.A.length} stocks` },
+    { id: 'nB', label: 'Portfolio B has ≥ 10 stocks', ok: cfg.holdings.B.length >= 10, detail: `${cfg.holdings.B.length} stocks` },
+    { id: 'overlap', label: 'No stock in both portfolios', ok: overlap.length === 0, detail: overlap.length ? overlap.join(', ') : 'distinct' },
+    { id: 'w', label: 'Weights total 100%', ok: Math.abs(wsum('A') - 1) <= 5e-5 && Math.abs(wsum('B') - 1) <= 5e-5, detail: `A ${(wsum('A') * 100).toFixed(1)}% · B ${(wsum('B') * 100).toFixed(1)}%` },
+  ];
+  return { specs, issues, blocking, metrics, classification, proxy, frontier, frontierError, overlap, compliance };
 }

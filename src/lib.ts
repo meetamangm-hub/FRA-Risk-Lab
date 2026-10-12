@@ -16,3 +16,8 @@ export const blocked = (an: Analysis) => an.blocking.A || an.blocking.B;
 export function dateAxis(m: PortfolioMetrics): string[] {
   return [m.window.start, ...m.dates];
 }
+
+import { fmtInr, fmtPct } from './format';
+/** Show a loss either as a % of value or in rupees, following the global ₹/% toggle. */
+export const showLoss = (unit: 'pct' | 'inr', frac: number | null | undefined, investment: number, d = 2): string =>
+  frac === null || frac === undefined ? '–' : unit === 'inr' ? fmtInr(frac * investment) : fmtPct(frac, d);

@@ -1,0 +1,34 @@
+{
+  "name": "fra-risk-lab",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Financial Risk Analytics: interactive VaR, Expected Shortfall and Markowitz lab for two NSE portfolios",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:report": "vitest run --reporter=verbose > docs/TEST_REPORT.txt 2>&1 || true",
+    "audit:data": "python3 scripts/audit-data.py",
+    "crosscheck": "python3 scripts/crosscheck.py"
+  },
+  "dependencies": {
+    "katex": "0.16.11",
+    "plotly.js-cartesian-dist-min": "2.35.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/katex": "0.16.7",
+    "@types/node": "^22.20.5",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.3",
+    "playwright-core": "1.48.2",
+    "typescript": "5.6.3",
+    "vite": "5.4.10",
+    "vitest": "2.1.4"
+  }
+}

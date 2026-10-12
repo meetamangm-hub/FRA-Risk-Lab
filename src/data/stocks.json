@@ -1,0 +1,162 @@
+[
+ {
+  "ticker": "SUZLON",
+  "name": "Suzlon Energy Ltd.",
+  "sector": "Renewable Energy",
+  "cap": "Mid-Cap",
+  "rationale": "Turnaround play in wind turbine generators; high price beta and operational exposure to clean energy capex.",
+  "portfolio": "A"
+ },
+ {
+  "ticker": "RALLIS",
+  "name": "Rallis India Ltd.",
+  "sector": "Agrochemicals",
+  "cap": "Small-Cap",
+  "rationale": "Small-cap agrochemical producer subject to seasonal monsoon variations and raw material costs.",
+  "portfolio": "A"
+ },
+ {
+  "ticker": "DEEPAKNTR",
+  "name": "Deepak Nitrite Ltd.",
+  "sector": "Specialty Chemicals",
+  "cap": "Mid-Cap",
+  "rationale": "High exposure to global chemical pricing cycles and raw material input cost volatility.",
+  "portfolio": "A"
+ },
+ {
+  "ticker": "KEI",
+  "name": "KEI Industries Ltd.",
+  "sector": "Cables & Wires",
+  "cap": "Mid-Cap",
+  "rationale": "Capital expenditure play tied to industrial and power infrastructure build-outs.",
+  "portfolio": "A"
+ },
+ {
+  "ticker": "RADICO",
+  "name": "Radico Khaitan Ltd.",
+  "sector": "Spirits & Beverages",
+  "cap": "Mid-Cap",
+  "rationale": "Premiumization growth narrative in consumer discretionary, sensitive to agricultural input costs and state taxes.",
+  "portfolio": "A"
+ },
+ {
+  "ticker": "ESCORTS",
+  "name": "Escorts Kubota Ltd.",
+  "sector": "Agri & Construction Machinery",
+  "cap": "Mid-Cap",
+  "rationale": "High earnings sensitivity to rural agricultural cycles, monsoon patterns, and construction spending.",
+  "portfolio": "A"
+ },
+ {
+  "ticker": "ASTRAMICRO",
+  "name": "Astra Microwave Products Ltd.",
+  "sector": "Defense Electronics",
+  "cap": "Small-Cap",
+  "rationale": "Small-cap defense supplier tied to government order execution schedules and lumpy quarterly cash flows.",
+  "portfolio": "A"
+ },
+ {
+  "ticker": "FINCABLES",
+  "name": "Finolex Cables Ltd.",
+  "sector": "Electrical Cables",
+  "cap": "Mid-Cap",
+  "rationale": "Cyclic industrial and construction demand driver with high raw copper price sensitivity.",
+  "portfolio": "A"
+ },
+ {
+  "ticker": "GRANULES",
+  "name": "Granules India Ltd.",
+  "sector": "Pharmaceuticals",
+  "cap": "Small-Cap",
+  "rationale": "Off-patent drug manufacturer subject to margin fluctuations and global supply chain cost shocks.",
+  "portfolio": "A"
+ },
+ {
+  "ticker": "CENTURYPLY",
+  "name": "Century Plyboards (India) Ltd.",
+  "sector": "Building Materials / Plywood",
+  "cap": "Small-Cap",
+  "rationale": "High correlation to domestic real estate cycles and raw timber/resin price trends.",
+  "portfolio": "A"
+ },
+ {
+  "ticker": "TCS",
+  "name": "Tata Consultancy Services Ltd.",
+  "sector": "IT Services",
+  "cap": "Large-Cap",
+  "rationale": "Market-leading IT exporter with multi-billion-dollar recurring revenues, high return on equity, and predictable dividends.",
+  "portfolio": "B"
+ },
+ {
+  "ticker": "RELIANCE",
+  "name": "Reliance Industries Ltd.",
+  "sector": "Conglomerate (Energy/Retail/Telecom)",
+  "cap": "Large-Cap",
+  "rationale": "India’s largest market-cap enterprise providing diversified cash streams across retail, telecom (Jio), and refining.",
+  "portfolio": "B"
+ },
+ {
+  "ticker": "HDFCBANK",
+  "name": "HDFC Bank Ltd.",
+  "sector": "Private Sector Banking",
+  "cap": "Large-Cap",
+  "rationale": "Premier private lender with conservative loan underwriting, strong low-cost CASA deposit base, and deep liquidity.",
+  "portfolio": "B"
+ },
+ {
+  "ticker": "HINDUNILVR",
+  "name": "Hindustan Unilever Ltd.",
+  "sector": "Consumer Staples (FMCG)",
+  "cap": "Large-Cap",
+  "rationale": "Essential household product leader with pricing power and steady demand through all economic conditions.",
+  "portfolio": "B"
+ },
+ {
+  "ticker": "ITC",
+  "name": "ITC Ltd.",
+  "sector": "Diversified Consumer Staples",
+  "cap": "Large-Cap",
+  "rationale": "Defensive free-cash-flow generator with dominant market share in core FMCG categories and high dividend yield.",
+  "portfolio": "B"
+ },
+ {
+  "ticker": "BHARTIARTL",
+  "name": "Bharti Airtel Ltd.",
+  "sector": "Telecommunications",
+  "cap": "Large-Cap",
+  "rationale": "Utility-like essential mobile and broadband infrastructure provider generating steady monthly subscriber revenue.",
+  "portfolio": "B"
+ },
+ {
+  "ticker": "SUNPHARMA",
+  "name": "Sun Pharmaceutical Industries Ltd.",
+  "sector": "Pharmaceuticals",
+  "cap": "Large-Cap",
+  "rationale": "Largest Indian pharma company with diversified chronic therapeutic market share and non-cyclical healthcare demand.",
+  "portfolio": "B"
+ },
+ {
+  "ticker": "POWERGRID",
+  "name": "Power Grid Corporation of India Ltd.",
+  "sector": "Utilities / Transmission",
+  "cap": "Large-Cap",
+  "rationale": "State-backed regulated electricity transmission monopoly offering contractual returns and consistent payouts.",
+  "portfolio": "B"
+ },
+ {
+  "ticker": "NTPC",
+  "name": "NTPC Ltd.",
+  "sector": "Power Generation",
+  "cap": "Large-Cap",
+  "rationale": "India's largest power generator backed by long-term Power Purchase Agreements (PPAs) that protect base cash flows.",
+  "portfolio": "B"
+ },
+ {
+  "ticker": "M&M",
+  "name": "Mahindra & Mahindra Ltd.",
+  "sector": "Auto & Farm Equipment",
+  "cap": "Large-Cap",
+  "rationale": "Blue-chip automotive giant anchored by market-dominant tractor sales and strong balance sheet liquidity.",
+  "portfolio": "B"
+ }
+]
